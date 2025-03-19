@@ -6,9 +6,12 @@ import math
 
 app = Flask(__name__)
 
+# Dictionary to store receipts in memory
 receipts = {}
 
 def validate_receipt(data):
+    """Validates receipt information"""
+    """ Returns True if valid, False and error message if invalid """
     RETAILER_REGEX = re.compile(r'^[\w\s\-&]+$')
     TOTAL_REGEX = re.compile(r'^\d+\.\d{2}$')
     ITEM_DESCRIPTION_REGEX = re.compile(r'^[\w\s\-]+$')
@@ -68,6 +71,7 @@ def validate_receipt(data):
     return True, None
         
 def award_points(receipt):
+    """Awards points based on receipt information"""
     points = 0
 
     # One point for every alphanumeric character in the retailer name.
@@ -120,9 +124,12 @@ def award_points(receipt):
 
 @app.route('/receipts/process', methods=['POST'])
 def process_receipt():
-    if not request.is_json:
+    """Processes a receipt and returns a unique ID"""
+    """ Returns receipt id if valid, Returns 400 if invalid """
+    try:
+        data = request.get_json()
+    except Exception:
         return jsonify({"error": "The receipt is invalid."}), 400
-    data = request.get_json()
     valid, error = validate_receipt(data)
     if not valid:
         return jsonify({"error": error}), 400
@@ -133,9 +140,11 @@ def process_receipt():
 
 @app.route('/receipts/<receipt_id>/points', methods=['GET'])
 def get_points(receipt_id):
+    """Returns the points awarded for a given receipt ID"""
+    """ Returns points if valid, Returns 404 if invalid """
     try:
-        receipt = receipts.get(receipt_id)
-    except KeyError:
+        receipt = receipts[receipt_id]
+    except Exception:
         return jsonify({"error": "Receipt not found."}), 404
     points = award_points(receipt)
     return jsonify({"points": points})
